@@ -5,5 +5,5 @@ D:\seed-phrase\target\debug\deps\libpipeline_tests-a1bac131413f86a2.rmeta: core-
 core-math\tests\pipeline_tests.rs:
 Cargo.toml:
 
-# env-dep:CLIPPY_ARGS=
+# env-dep:CLIPPY_ARGS=-D__CLIPPY_HACKERY__warnings__CLIPPY_HACKERY__
 # env-dep:CLIPPY_CONF_DIR

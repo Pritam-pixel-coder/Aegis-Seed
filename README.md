@@ -1,7 +1,6 @@
 # Aegis-Seed: Side-Channel Resistant BIP-39 Cryptosystem
 
 [![Aegis-Seed CI](https://github.com/Pritam-pixel-coder/Aegis-Seed/actions/workflows/ci.yml/badge.svg)](https://github.com/Pritam-pixel-coder/Aegis-Seed/actions/workflows/ci.yml)
-[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![no_std](https://img.shields.io/badge/no__std-core--math-success.svg)](core-math/src/lib.rs)
 [![DudeCT](https://img.shields.io/badge/dudect-%7Ct%7C%20%3C%204.5-brightgreen.svg)](core-math/benches/dudect_bench.rs)
 [![TIMECOP](https://img.shields.io/badge/valgrind-TIMECOP%20passed-brightgreen.svg)](core-math/tests/timecop_kem.rs)
@@ -29,7 +28,6 @@
   - [Prerequisites](#prerequisites)
   - [Build and Test Commands](#build-and-test-commands)
   - [Running the Complete Demo Pipeline](#running-the-complete-demo-pipeline)
-- [License](#license)
 
 ---
 
@@ -108,8 +106,7 @@ Aegis-Seed is organized as a Cargo Workspace separating pure `#![no_std]` consta
 aegis-seed/
 ├── Cargo.toml                     # Workspace root manifest
 ├── .gitignore                     # Git ignore rules for build artifacts
-├── LICENSE-MIT                    # MIT License file
-├── LICENSE-APACHE                 # Apache 2.0 License file
+├── LICENSE                        # Project License file
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                 # 4-job CI pipeline (Ubuntu, Windows, Dudect, Valgrind)
@@ -333,12 +330,3 @@ Expected Output:
 ================================================================================
 ```
 
----
-
-## 📄 License
-
-Licensed under either of:
-- Apache License, Version 2.0 ([LICENSE-APACHE](LICENSE-APACHE) or http://www.apache.org/licenses/LICENSE-2.0)
-- MIT license ([LICENSE-MIT](LICENSE-MIT) or http://opensource.org/licenses/MIT)
-
-at your option.

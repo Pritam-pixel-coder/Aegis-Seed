@@ -1,9 +1,9 @@
 # Aegis-Seed: Side-Channel Resistant BIP-39 Cryptosystem
 
 [![Aegis-Seed CI](https://github.com/Pritam-pixel-coder/Aegis-Seed/actions/workflows/ci.yml/badge.svg)](https://github.com/Pritam-pixel-coder/Aegis-Seed/actions/workflows/ci.yml)
-[![License](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE)
+[![License: MIT OR Apache-2.0](https://img.shields.io/badge/license-MIT%2FApache--2.0-blue.svg)](LICENSE-MIT)
 [![no_std](https://img.shields.io/badge/no__std-core--math-success.svg)](core-math/src/lib.rs)
-[![DudeCT](https://img.shields.io/badge/dudect-|t|<4.5-brightgreen.svg)](core-math/benches/dudect_bench.rs)
+[![DudeCT](https://img.shields.io/badge/dudect-%7Ct%7C%20%3C%204.5-brightgreen.svg)](core-math/benches/dudect_bench.rs)
 [![TIMECOP](https://img.shields.io/badge/valgrind-TIMECOP%20passed-brightgreen.svg)](core-math/tests/timecop_kem.rs)
 
 **Aegis-Seed** is an enterprise-grade, side-channel immune cryptocurrency master seed protection engine written in Rust. It combines strict `#![no_std]` bare-metal systems engineering with finite field linear algebra, number-theoretic coding theory, and Conic Curve Cryptography (CC-DLP) to protect 24-word BIP-39 cryptocurrency master seed phrases against physical fault injection, cache-timing side channels, and cold-boot memory extraction attacks.
@@ -12,24 +12,24 @@
 
 ## 📑 Table of Contents
 
-- [Core Security Invariants](#-core-security-invariants)
-- [System Architecture](#-system-architecture)
-- [Workspace Organization](#-workspace-organization)
-- [Cryptographic & Mathematical Layers](#-cryptographic--mathematical-layers)
+- [Core Security Invariants](#core-security-invariants)
+- [System Architecture](#system-architecture)
+- [Workspace Organization](#workspace-organization)
+- [Cryptographic & Mathematical Layers](#cryptographic--mathematical-layers)
   - [Layer 1: Ingestion & BIP-39 Entropy Vectorization](#layer-1-ingestion--bip-39-entropy-vectorization)
-  - [Layer 2: Linear-Algebraic Secret Sharing over $\mathrm{GF}(2^8)$](#layer-2-linear-algebraic-secret-sharing-over-mathrmgf28)
-  - [Layer 3: Systematic Reed-Solomon Fault Tolerance over $\mathrm{GF}(2^{11})$](#layer-3-systematic-reed-solomon-fault-tolerance-over-mathrmgf211)
+  - [Layer 2: Linear-Algebraic Secret Sharing over GF(2^8)](#layer-2-linear-algebraic-secret-sharing-over-gf28)
+  - [Layer 3: Systematic Reed-Solomon Fault Tolerance over GF(2^11)](#layer-3-systematic-reed-solomon-fault-tolerance-over-gf211)
   - [Layer 4: Conic Curve Key Encapsulation Mechanism (CC-KEM)](#layer-4-conic-curve-key-encapsulation-mechanism-cc-kem)
   - [Layer 5: OS-Level Hardware Memory Hardening](#layer-5-os-level-hardware-memory-hardening)
-- [Side-Channel Verification & Security Gates](#-side-channel-verification--security-gates)
+- [Side-Channel Verification & Security Gates](#side-channel-verification--security-gates)
   - [1. DudeCT Statistical Timing Gate (Welch's t-test)](#1-dudect-statistical-timing-gate-welchs-t-test)
   - [2. Valgrind Memcheck & TIMECOP Dynamic Secret-Taint Analysis](#2-valgrind-memcheck--timecop-dynamic-secret-taint-analysis)
-  - [3. Continuous Integration Pipeline](#3-continuous-integration-pipeline)
-- [Quickstart & Usage](#-quickstart--usage)
+  - [3. Continuous Integration Pipeline (4 Parallel Jobs)](#3-continuous-integration-pipeline-4-parallel-jobs)
+- [Quickstart & Usage](#quickstart--usage)
   - [Prerequisites](#prerequisites)
   - [Build and Test Commands](#build-and-test-commands)
   - [Running the Complete Demo Pipeline](#running-the-complete-demo-pipeline)
-- [License](#-license)
+- [License](#license)
 
 ---
 
@@ -85,7 +85,7 @@
 | - Pell Curve C_d : x^2 - 2*y^2 = 1 (mod p) over prime p = 2^255 - 19            |
 | - Multi-precision 256-bit Montgomery Ladder Scalar Multiplication               |
 | - Unconditional limb carry propagation in Montgomery reduction                  |
-| - Encapsulation of 32-byte Share #1 into ConicCiphertext (16-byte Poly1305 MAC) |
+| - Encapsulation of 32-byte Share #1 into ConicCiphertext (16-byte MAC Tag)      |
 | - Constant-Time Implicit Rejection (surrogate fallback defeating error oracles) |
 +---------------------------------------------------------------------------------+
                                        |
@@ -108,6 +108,8 @@ Aegis-Seed is organized as a Cargo Workspace separating pure `#![no_std]` consta
 aegis-seed/
 ├── Cargo.toml                     # Workspace root manifest
 ├── .gitignore                     # Git ignore rules for build artifacts
+├── LICENSE-MIT                    # MIT License file
+├── LICENSE-APACHE                 # Apache 2.0 License file
 ├── .github/
 │   └── workflows/
 │       └── ci.yml                 # 4-job CI pipeline (Ubuntu, Windows, Dudect, Valgrind)
@@ -139,7 +141,7 @@ $$\vec{v} = \text{Entropy}_{256} \mathbin{\Vert} \text{SHA256}(\text{Entropy}_{2
 - Word extraction and index concatenation are performed branchlessly using bitwise shifts and masks across `Gf2Vector<BYTES>`.
 - The checksum is verified in constant time via `subtle::ConstantTimeEq`.
 
-### Layer 2: Linear-Algebraic Secret Sharing over $\mathrm{GF}(2^8)$
+### Layer 2: Linear-Algebraic Secret Sharing over GF(2^8)
 To distribute the 32-byte master key across multiple custodian nodes, Aegis-Seed implements a $(t=3, n=5)$ threshold secret sharing scheme over the Rijndael finite field $\mathrm{GF}(2^8) = \mathbb{F}_2[x] / (x^8 + x^4 + x^3 + x + 1)$:
 - **Carryless Russian Peasant Multiplication**: Evaluated over 8 bit-steps where reduction by $P(x) = \text{0x11B}$ is conditioned by a bitmask without branching.
 - **Inversion via Fermat's Little Theorem**: Computed without lookup tables via:
@@ -147,7 +149,7 @@ To distribute the 32-byte master key across multiple custodian nodes, Aegis-Seed
 - **Branchless Gaussian Elimination**: Matrix inversion for $t \times t$ Vandermonde systems executes pivot selection using `subtle::Choice` and `ConditionallySelectable`. If a pivot row is zero, rows are conditionally swapped branchlessly.
 - **32-Byte Secret Sharing**: Each generated share is exactly 32 bytes long. Any 3 out of 5 shares recover the exact 32-byte master key.
 
-### Layer 3: Systematic Reed-Solomon Fault Tolerance over $\mathrm{GF}(2^{11})$
+### Layer 3: Systematic Reed-Solomon Fault Tolerance over GF(2^11)
 Human custodians transcribing 24-word seed phrases can introduce transcription faults. Aegis-Seed extends the 24 words with a systematic Reed-Solomon code $(N=26, K=24, d_{\min}=3)$ over $\mathrm{GF}(2^{11}) = \mathbb{F}_2[x] / (x^{11} + x^2 + 1)$ with primitive element $\alpha = 2$:
 - **Field Inversion**:
   $$a^{-1} = a^{2^{11} - 2} = a^{2046}$$
@@ -163,7 +165,7 @@ Before distributing shares across physical custodians or transmission channels, 
   $$(x_1, y_1) \oplus (x_2, y_2) = (x_1 x_2 + 2 y_1 y_2 \pmod p, \; x_1 y_2 + x_2 y_1 \pmod p)$$
 - **Constant-Time Montgomery Ladder**: Scalar multiplication $[k]P$ executes 256 uniform steps using `ConicPoint::conditional_swap`, doubling, and addition.
 - **Branchless Montgomery Reduction**: Multi-precision 256-bit reduction uses an unconditional limb loop `for k in (i + 4)..8` to eliminate carry-dependent branches.
-- **Implicit Rejection (Fujisaki-Okamoto Transform)**: If the ciphertext ephemeral point is invalid or the 16-byte Poly1305 MAC tag does not match, decapsulation branchlessly selects a deterministic surrogate key $H(sk \parallel R_x)$, completely defeating chosen-ciphertext error-oracle attacks.
+- **Implicit Rejection (Fujisaki-Okamoto Transform)**: If the ciphertext ephemeral point is invalid or the 16-byte MAC tag does not match, decapsulation branchlessly selects a deterministic surrogate key $H(sk \parallel R_x)$, completely defeating chosen-ciphertext error-oracle attacks.
 
 ### Layer 5: OS-Level Hardware Memory Hardening
 When the master secret is reconstructed in memory, it is wrapped in `ProtectedMemory<T>`:
@@ -203,28 +205,35 @@ chmod +x scripts/run_valgrind_timecop.sh
 ./scripts/run_valgrind_timecop.sh
 ```
 
-### 3. Continuous Integration Pipeline
+### 3. Continuous Integration Pipeline (4 Parallel Jobs)
 Every push and pull request is audited across 4 parallel security jobs in GitHub Actions ([`.github/workflows/ci.yml`](file:///d:/seed-phrase/.github/workflows/ci.yml)):
 
 ```text
-                                  +------------------------------------+
-                                  | GitHub Actions Workflow: ci.yml    |
-                                  +------------------------------------+
-                                                     |
-         +-------------------------------------------+-------------------------------------------+
-         |                                           |                                           |
-         v                                           v                                           v
-+-----------------------------+             +-----------------------------+             +-----------------------------+
-| Job 1: Build & Test         |             | Job 2: Dudect Gate          |             | Job 3: Valgrind TIMECOP     |
-| - Ubuntu & Windows Matrix   |             | - 15,000+ Dual-Class Runs   |             | - V-Bit Undefined Tracking  |
-| - cargo fmt -- --check      |             | - Welch's t-test Evaluation |             | - Valgrind Memcheck Runner  |
-| - cargo clippy -D warnings  |             | - Gate: |t| < 4.5           |             | - Zero Secret Branches Gate |
-| - cargo check -p core-math  |             +-----------------------------+             +-----------------------------+
-|   --no-default-features     |
-| - cargo test --workspace    |
-| - cargo run --release       |
-+-----------------------------+
+                                  +-------------------------------------------------------+
+                                  | GitHub Actions CI: .github/workflows/ci.yml           |
+                                  +-------------------------------------------------------+
+                                                              |
+         +----------------------------+-----------------------+-----------------------+----------------------------+
+         |                            |                                               |                            |
+         v                            v                                               v                            v
++-----------------------+    +-----------------------+                     +-----------------------+    +-----------------------+
+| Job 1: Build & Test   |    | Job 2: Build & Test   |                     | Job 3: Dudect Gate    |    | Job 4: Valgrind       |
+| (ubuntu-latest)       |    | (windows-latest)      |                     | (ubuntu-latest)       |    | TIMECOP               |
++-----------------------+    +-----------------------+                     +-----------------------+    | (ubuntu-latest)       |
+| - cargo fmt --check   |    | - MSVC / MinGW build  |                     | - 15,000+ iterations  |    +-----------------------+
+| - clippy -D warnings  |    | - VirtualLock memory  |                     | - Dual-class inputs   |    | - V-bit undefined     |
+| - no_std verification |    |   locking integration |                     | - Welch's t-test      |    |   taint tracking      |
+| - Unit tests pass     |    | - Full 5-layer trace  |                     | - Gate: |t| < 4.5     |    | - Zero secret-branch  |
+| - CLI release build   |    | - Cross-platform pass |                     | - Constant-time pass  |    |   decapsulation pass  |
++-----------------------+    +-----------------------+                     +-----------------------+    +-----------------------+
 ```
+
+| CI Job Name | Runner OS | Target Primitives / Scope | Security Gate Verified |
+| :--- | :--- | :--- | :--- |
+| **`Build & Test (ubuntu-latest)`** | `ubuntu-latest` | `core-math` & `cli-app` | Strict `#![no_std]` compliance, zero compiler warnings (`-D warnings`), clippy lint clean, exhaustive unit tests. |
+| **`Build & Test (windows-latest)`** | `windows-latest` | `core-math` & `cli-app` | Cross-platform compatibility, Windows memory locking (`VirtualLock`), and full 5-layer execution trace. |
+| **`Dudect Side-Channel Leakage Gate`** | `ubuntu-latest` | $\mathrm{GF}(2^8)$, $\mathrm{GF}(2^{11})$, Conic KEM | Statistical side-channel immunity verified via Welch's two-sample $t$-test ($|t| < 4.5$, $p > 0.99999$). |
+| **`Valgrind Memcheck & TIMECOP`** | `ubuntu-latest` | Conic KEM Decapsulation | Dynamic shadow-memory $V$-bit taint analysis verified **zero secret-dependent branches or table lookups**. |
 
 ---
 
@@ -280,22 +289,32 @@ Expected Output:
        720 2020 1817  803 1703  966 1038 1620 
        400 1087 1465  937 1083  336 1602    1 
        282  345 1811  700 1783 1092 1094  952 
+      
     [+] Constant-Time Checksum Verification: PASSED
 
 [*] LAYER 2: Linear-Algebraic (t=3, n=5) Secret Sharing over GF(2^8)...
-    - Generated 5 Secret Shares (Each exactly 32 bytes long)
+    - Generated 5 Secret Shares (Each exactly 32 bytes long):
+      Share #1: x = 1, data: [b0, f5, 79, 66, 58, d7, a4, 1b, 4a, 9c, be, d8, fa, 14, 36, 50, 72, 9c, be, d8, fa, eb, c9, af, 8d, 63, 41, 27, 05, fb, c8, d9]
+      Share #2: x = 2, data: [e2, a7, 2b, 34, 0a, 85, f6, 49, 18, ce, ec, 8a, a8, 46, 64, 02, 20, ce, ec, 8a, a8, b9, 9b, fd, df, 31, 13, 75, 57, a9, 9a, 8b]
+      Share #3: x = 3, data: [08, 4d, c1, de, e0, 6f, 1c, a3, f2, 24, 06, 60, 42, ac, 8e, e8, ca, 24, 06, 60, 42, 53, 71, 17, 35, db, f9, 9f, bd, 43, 70, 61]
+      Share #4: x = 4, data: [f6, b3, 3f, 20, 1e, 91, e2, 5d, 0c, da, f8, 9e, bc, 52, 70, 16, 34, da, f8, 9e, bc, ad, 8f, e9, cb, 25, 07, 61, 43, bd, 8e, 9f]
+      Share #5: x = 5, data: [1c, 59, d5, ca, f4, 7b, 08, b7, e6, 30, 12, 74, 56, b8, 9a, fc, de, 30, 12, 74, 56, 47, 65, 03, 21, cf, ed, 8b, a9, 57, 64, 75]
     - Testing Branchless Gaussian Elimination (3x3 Matrix Inversion over GF(2^8)):
     [+] Branchless Gaussian Elimination: PASSED (Non-singular inversion verified)
 
 [*] LAYER 3: Reed-Solomon (N=26, K=24) Error Correction over GF(2^11)...
-    - Systematic Codeword (24 data symbols + 2 parity symbols)
+    - Systematic Codeword (24 data symbols + 2 parity symbols):
+      Parity 0: 1192, Parity 1: 853
     [!] Injected Word Corruption at Index 5: 966 -> 99
     [+] Constant-time syndrome locator restored corrupted word: 966 (Identical to original!)
     [+] Single-word Fault Tolerance: VERIFIED
 
 [*] LAYER 4: Conic Curve Key Encapsulation Mechanism (CC-KEM)...
     - Conic Curve Generator G = (x, y) on x^2 - 2y^2 = 1
-    - Encapsulated Share #1 (Full 32 bytes) into ConicCiphertext
+    - Recipient Public Key Point Q = [sk] G computed via Constant-Time Montgomery Ladder.
+    - Encapsulated Share #1 (Full 32 bytes) into ConicCiphertext:
+      Encrypted Payload: [24, 0f, 14, 7a, 8e, 8d, c1, 55, 5b, 71, c0, 8d, 91, 5f, dc, 5b, 56, 33, e5, 4c, 5b, 01, 9d, 53, 4e, 93, fb, bb, af, 31, 02, e4]
+      Poly1305 MAC Tag (16 bytes): [83, 3e, 40, ce, ad, bd, 2f, a7, 57, 4a, e7, 88, d6, 43, 28, 72]
     [+] Constant-Time Decapsulation: SUCCESS (Full 32-byte Share #1 retrieved)
     [+] Implicit Rejection Test: PASSED (Branchless fallback to deterministic surrogate key)
 
@@ -306,7 +325,7 @@ Expected Output:
 
 [*] LAYER 5: Enclosing Master Seed in Hardware-Protected Memory...
     - VirtualLock / mlock engaged: Memory pages locked into physical RAM
-    - ProtectedMemory active.
+    - ProtectedMemory active. Accessing seed: [5a, 1f, 93, 8c, b2, 3d, 4e, f1, a0, 76, 54, 32, 10, fe, dc, ba, 98, 76, 54, 32, 10, 01, 23, 45, 67, 89, ab, cd, ef, 11, 22, 33]
     [+] ProtectedMemory dropped: Volatile zeroization and page release completed.
 
 ================================================================================

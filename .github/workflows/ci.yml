@@ -1,17 +1,20 @@
-name: Aegis-Seed CI & Constant-Time Verification Gate
+name: Aegis-Seed CI & Constant-Time Security Verification
 
 on:
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+  workflow_dispatch:
 
 env:
   CARGO_TERM_COLOR: always
   RUSTFLAGS: "-D warnings"
 
 jobs:
-  # Job 1: no_std Verification and Cross-Platform Unit Tests
+  # ============================================================================
+  # Job 1: Standard Rust Build, no_std Verification, and Cross-Platform Tests
+  # ============================================================================
   build-and-test:
     name: Build & Test (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
@@ -25,7 +28,7 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust toolchain (${{ matrix.rust }})
         uses: dtolnay/rust-toolchain@master
         with:
           toolchain: ${{ matrix.rust }}
@@ -35,18 +38,20 @@ jobs:
         run: cargo fmt -- --check
 
       - name: Clippy Linter Check
-        run: cargo clippy --all-targets -- -D warnings
+        run: cargo clippy --workspace --all-targets -- -D warnings
 
       - name: Verify strict #![no_std] Core Build
-        run: cargo check --no-default-features
+        run: cargo check -p core-math --no-default-features
 
-      - name: Run Full Pipeline Tests
-        run: cargo test --verbose
+      - name: Run Full Workspace Unit Tests
+        run: cargo test --workspace --verbose
 
-      - name: Run Pipeline Executable
-        run: cargo run --release
+      - name: Run CLI Hardware Memory Pipeline Demonstration
+        run: cargo run --release -p cli-app
 
+  # ============================================================================
   # Job 2: Dudect Statistical Constant-Time Leakage Gate (Welch's t-test)
+  # ============================================================================
   dudect-statistical-gate:
     name: Dudect Side-Channel Leakage Gate (|t| < 4.5)
     runs-on: ubuntu-latest
@@ -54,15 +59,17 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
-      - name: Install Rust toolchain
+      - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Run Dudect Welch's t-test Statistical Analysis
-        run: cargo bench --bench dudect_bench -- --nocapture
+      - name: Run Dudect Statistical Analysis Against core-math
+        run: cargo bench -p core-math --bench dudect_bench -- --nocapture
 
-  # Job 3: Valgrind / Memcheck-TIMECOP Dynamic Analysis
+  # ============================================================================
+  # Job 3: Valgrind Memcheck & TIMECOP Dynamic Secret-Branch Analysis
+  # ============================================================================
   valgrind-timecop:
-    name: Valgrind Memcheck & Timing Branch Analysis
+    name: Valgrind Memcheck & TIMECOP Dynamic Secret-Branch Analysis
     runs-on: ubuntu-latest
     steps:
       - name: Check out repository
@@ -73,16 +80,29 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y valgrind
 
-      - name: Install Rust toolchain
+      - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build Debug Binary with Symbols
-        run: cargo build --bin aegis-seed
-
-      - name: Run Valgrind Memcheck Execution
+      - name: Build TIMECOP KEM Test and CLI Application with DWARF Symbols
         run: |
-          valgrind --error-exitcode=1 \
-                   --leak-check=full \
-                   --track-origins=yes \
-                   ./target/debug/aegis-seed
+          cargo test -p core-math --test timecop_kem --no-run
+          cargo build -p cli-app
 
+      - name: Execute TIMECOP Conic KEM Decapsulation under Valgrind Memcheck
+        run: |
+          TIMECOP_BIN=$(ls -t target/debug/deps/timecop_kem-* | grep -v '\.d$' | head -n 1)
+          valgrind \
+            --tool=memcheck \
+            --leak-check=full \
+            --track-origins=yes \
+            --error-exitcode=1 \
+            "$TIMECOP_BIN"
+
+      - name: Execute Full Application Lifecycle under Valgrind Memcheck
+        run: |
+          valgrind \
+            --tool=memcheck \
+            --leak-check=full \
+            --track-origins=yes \
+            --error-exitcode=1 \
+            ./target/debug/cli-app

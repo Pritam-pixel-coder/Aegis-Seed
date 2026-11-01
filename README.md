@@ -36,19 +36,19 @@
                                        |
                                        v
 +---------------------------------------------------------------------------------+
-| LAYER 3: Number-Theoretic Fault Tolerance (GF(2^11))                            |
-| - Systematic Reed-Solomon Code (N=26, K=24, d_min=3) over GF(2^11)             |
-| - Irreducible Polynomial: P(x) = x^11 + x^2 + 1 (0x805)                         |
-| - Branchless syndrome calculation & single-word error correction                |
-+---------------------------------------------------------------------------------+
-                                       |
-                                       v
-+---------------------------------------------------------------------------------+
 | LAYER 2: Linear-Algebraic Secret Sharing (GF(2^8))                              |
 | - Rijndael Field GF(2^8) with Carryless Russian Peasant Multiplication          |
 | - Inversion via Fermat's Little Theorem (a^254) with fixed addition chain       |
 | - Branchless Gaussian Elimination Matrix Inversion                              |
 | - Constant-Time (t, n) Threshold Secret Sharing Engine                          |
++---------------------------------------------------------------------------------+
+                                       |
+                                       v
++---------------------------------------------------------------------------------+
+| LAYER 3: Number-Theoretic Fault Tolerance (GF(2^11))                            |
+| - Systematic Reed-Solomon Code (N=26, K=24, d_min=3) over GF(2^11)             |
+| - Irreducible Polynomial: P(x) = x^11 + x^2 + 1 (0x805)                         |
+| - Branchless syndrome calculation & single-word error correction                |
 +---------------------------------------------------------------------------------+
                                        |
                                        v
@@ -73,11 +73,17 @@
 
 ## 🧮 Mathematical Formulations
 
-### Layer 2: $\mathrm{GF}(2^8)$ Carryless Arithmetic
+### Layer 1: BIP-39 Vectorization & $\mathrm{GF}(2)$ Linear Checksum
+A 24-word BIP-39 mnemonic is converted into a 264-bit bitstring consisting of 256 bits of entropy and an 8-bit checksum:
+$$\text{checksum} = \text{SHA256}(\text{entropy})[0..8\text{ bits}]$$
+The 264 bits are grouped into 24 eleven-bit integers in $\{0, \dots, 2047\}$ via constant-time bitwise slice operations over $\mathrm{GF}(2)^{264}$ without table lookups.
+
+### Layer 2: $\mathrm{GF}(2^8)$ Carryless Arithmetic & Linear-Algebraic Secret Sharing
 Let $a(x), b(x) \in \mathbb{F}_2[x] / (x^8 + x^4 + x^3 + x + 1)$. Carryless multiplication computes:
 $$c(x) = \sum_{i=0}^7 b_i \cdot \big(a(x) \cdot x^i \pmod{P(x)}\big)$$
 Field inversion is computed without lookup tables via Fermat's Little Theorem:
 $$a^{-1} = a^{2^8 - 2} = a^{254}$$
+Linear secret sharing generates $n$ shares of 32 bytes each using random polynomials $P_j(x)$ of degree $t-1$. Recombination is performed via branchless Gaussian elimination on a $t \times t$ Vandermonde matrix.
 
 ### Layer 3: Systematic Reed-Solomon over $\mathrm{GF}(2^{11})$
 Each BIP-39 word index is an 11-bit integer in $\{0, \dots, 2047\}$, corresponding to an element of $\mathrm{GF}(2^{11}) = \mathbb{F}_2[x] / (x^{11} + x^2 + 1)$.
@@ -91,6 +97,11 @@ The decoder tests all 26 locations uniformly in constant time using `subtle::Con
 For points on the conic section $x^2 - d y^2 \equiv 1 \pmod n$, addition corresponds to multiplication in the quadratic extension $\mathbb{Z}_n[\sqrt{d}]$:
 $$(x_1 + y_1 \sqrt{d})(x_2 + y_2 \sqrt{d}) = (x_1 x_2 + d y_1 y_2) + (x_1 y_2 + x_2 y_1)\sqrt{d}$$
 Scalar multiplication $[k]P$ is evaluated using a 256-step Montgomery ladder where every bit executes 1 addition and 1 doubling branchlessly.
+
+### Layer 5: Hardware-Enforced Memory Hardening & Zeroization
+- **Linux**: Memory pages are allocated via `memfd_secret(2)` (syscall 447), removing the memory region from the kernel's direct mapping table (`kmap`) and preventing kernel read access or hypervisor snooping.
+- **Windows**: Pages are locked into physical RAM via `VirtualLock`, preventing them from being paged out to `pagefile.sys`.
+- **Zeroization**: Drop implementations enforce volatile memory zeroization via `zeroize::Zeroize` preventing compiler elision.
 
 ---
 

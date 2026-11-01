@@ -1,47 +1,9 @@
-[package]
-name = "aegis-seed"
-version = "0.1.0"
-edition = "2021"
-authors = ["Aegis-Seed Cryptographic Systems Team"]
-description = "Side-channel resistant BIP-39 master seed manager using Linear-Algebraic Secret Sharing and Conic Curve KEM"
-license = "MIT OR Apache-2.0"
-
-[dependencies]
-# Constant-time conditional operations without secret-dependent branching or indexing
-subtle = { version = "2.6", default-features = false }
-
-# Zeroize sensitive memory on drop
-zeroize = { version = "1.8", default-features = false, features = ["alloc", "derive"] }
-
-# OS feature branch switching
-cfg-if = "1.0"
-
-# Low-level system bindings for memory protection (Layer 5)
-[target.'cfg(target_os = "linux")'.dependencies]
-libc = { version = "0.2", default-features = false }
-
-[target.'cfg(target_os = "windows")'.dependencies]
-windows-sys = { version = "0.59", default-features = false, features = [
-    "Win32_System_Memory",
-    "Win32_Foundation"
-] }
-
-[dev-dependencies]
-# Dudect benchmark harness for Welch's t-test side-channel leakage detection
-rand = { version = "0.8", default-features = false, features = ["alloc"] }
-
-[features]
-default = ["std"]
-std = ["zeroize/std", "subtle/std"]
-
-[[bin]]
-name = "aegis-seed"
-path = "src/main.rs"
-
-[[bench]]
-name = "dudect_bench"
-path = "benches/dudect_bench.rs"
-harness = false
+[workspace]
+members = [
+    "core-math",
+    "cli-app",
+]
+resolver = "2"
 
 [profile.release]
 opt-level = 3

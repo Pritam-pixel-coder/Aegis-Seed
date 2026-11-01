@@ -1,0 +1,18 @@
+[package]
+name = "core-math"
+version = "0.1.0"
+edition = "2021"
+authors = ["Aegis-Seed Cryptographic Systems Team"]
+description = "Strict no_std constant-time cryptographic mathematics for Aegis-Seed"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+# Constant-time conditional operations without secret-dependent branching or indexing
+subtle = { version = "2.6", default-features = false }
+
+# In-memory zeroization
+zeroize = { version = "1.8", default-features = false, features = ["derive"] }
+
+[[bench]]
+name = "dudect_bench"
+harness = false

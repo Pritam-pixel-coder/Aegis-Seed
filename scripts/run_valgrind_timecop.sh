@@ -21,37 +21,30 @@ if ! command -v valgrind &> /dev/null; then
     exit 1
 fi
 
-echo "[*] Step 1: Compiling debug binary with full DWARF symbols..."
-cargo build --bin aegis-seed
+echo "[*] Step 1: Compiling TIMECOP test and CLI binaries with DWARF symbols..."
+cargo test -p core-math --test timecop_kem --no-run
+cargo build -p cli-app
 
-BINARY="./target/debug/aegis-seed"
+TIMECOP_BIN=$(ls -t target/debug/deps/timecop_kem-* | grep -v '\.d$' | head -n 1)
+CLI_BIN="./target/debug/cli-app"
 
-if [ ! -f "$BINARY" ]; then
-    echo "[-] Error: binary not found at $BINARY"
-    exit 1
-fi
-
-echo "[*] Step 2: Executing under Valgrind Memcheck..."
+echo "[*] Step 2: Executing TIMECOP KEM Decapsulation under Valgrind Memcheck..."
 valgrind \
     --tool=memcheck \
     --leak-check=full \
-    --show-leak-kinds=all \
     --track-origins=yes \
-    --error-exitcode=42 \
-    "$BINARY"
+    --error-exitcode=1 \
+    "$TIMECOP_BIN"
 
-EXIT_CODE=$?
+echo "[*] Step 3: Executing full CLI application under Valgrind Memcheck..."
+valgrind \
+    --tool=memcheck \
+    --leak-check=full \
+    --track-origins=yes \
+    --error-exitcode=1 \
+    "$CLI_BIN"
 
-if [ $EXIT_CODE -eq 0 ]; then
-    echo ""
-    echo "[+] SUCCESS: Valgrind Memcheck passed with ZERO errors."
-    echo "[+] Constant-time guarantee upheld: No undefined/secret-dependent branches detected."
-elif [ $EXIT_CODE -eq 42 ]; then
-    echo ""
-    echo "[-] FAILURE: Valgrind detected memory safety or timing branch violations!"
-    exit 42
-else
-    echo "[-] Execution terminated with code $EXIT_CODE"
-    exit $EXIT_CODE
-fi
+echo ""
+echo "[+] SUCCESS: Valgrind Memcheck passed with ZERO errors."
+echo "[+] Constant-time guarantee upheld: No undefined/secret-dependent branches detected."
 

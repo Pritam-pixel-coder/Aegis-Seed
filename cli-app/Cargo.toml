@@ -1,0 +1,22 @@
+[package]
+name = "cli-app"
+version = "0.1.0"
+edition = "2021"
+authors = ["Aegis-Seed Cryptographic Systems Team"]
+description = "Aegis-Seed CLI demonstration and OS-level memory hardening application"
+license = "MIT OR Apache-2.0"
+
+[dependencies]
+core-math = { path = "../core-math" }
+subtle = "2.6"
+zeroize = { version = "1.8", features = ["derive"] }
+cfg-if = "1.0"
+
+[target.'cfg(target_os = "windows")'.dependencies]
+windows-sys = { version = "0.59", default-features = false, features = [
+    "Win32_System_Memory",
+    "Win32_Foundation"
+] }
+
+[target.'cfg(target_os = "linux")'.dependencies]
+libc = { version = "0.2", default-features = false }

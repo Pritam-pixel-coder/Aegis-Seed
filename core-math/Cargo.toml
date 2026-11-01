@@ -16,3 +16,7 @@ zeroize = { version = "1.8", default-features = false, features = ["derive"] }
 [[bench]]
 name = "dudect_bench"
 harness = false
+
+[[test]]
+name = "timecop_kem"
+harness = false

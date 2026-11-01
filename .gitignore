@@ -1,0 +1,9 @@
+/target/
+*.exe
+*.pdb
+*.dll
+.idea/
+.vscode/
+*.swp
+*.bak
+

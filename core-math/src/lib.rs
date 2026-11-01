@@ -1012,12 +1012,10 @@ impl MontgomeryContext {
                 a[i + j] = prod as u64;
                 carry = prod >> 64;
             }
-            let mut k = i + 4;
-            while carry > 0 && k < 8 {
+            for k in (i + 4)..8 {
                 let sum = (a[k] as u128) + carry;
                 a[k] = sum as u64;
                 carry = sum >> 64;
-                k += 1;
             }
         }
 

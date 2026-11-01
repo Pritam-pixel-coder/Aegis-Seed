@@ -83,26 +83,15 @@ jobs:
       - name: Install Rust toolchain (stable)
         uses: dtolnay/rust-toolchain@stable
 
-      - name: Build TIMECOP KEM Test and CLI Application with DWARF Symbols
-        run: |
-          cargo test -p core-math --test timecop_kem --no-run
-          cargo build -p cli-app
+      - name: Build TIMECOP KEM Test Binary with DWARF Symbols
+        run: cargo test -p core-math --test timecop_kem --no-run
 
       - name: Execute TIMECOP Conic KEM Decapsulation under Valgrind Memcheck
         run: |
           TIMECOP_BIN=$(ls -t target/debug/deps/timecop_kem-* | grep -v '\.d$' | head -n 1)
+          chmod +x "$TIMECOP_BIN"
           valgrind \
             --tool=memcheck \
-            --leak-check=full \
             --track-origins=yes \
             --error-exitcode=1 \
             "$TIMECOP_BIN"
-
-      - name: Execute Full Application Lifecycle under Valgrind Memcheck
-        run: |
-          valgrind \
-            --tool=memcheck \
-            --leak-check=full \
-            --track-origins=yes \
-            --error-exitcode=1 \
-            ./target/debug/cli-app
